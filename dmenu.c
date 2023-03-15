@@ -30,12 +30,14 @@ enum { SchemeNorm, SchemeSel, SchemeOut, SchemeLast }; /* color schemes */
 
 struct item {
 	char *text;
+	char *extra;
 	struct item *left, *right;
 	int out;
 };
 
 static char text[BUFSIZ] = "";
 static char *embed;
+static char *hint_separator;
 static int bh, mw, mh;
 static int inputw = 0, promptw;
 static int lrpad; /* sum of left and right padding */
@@ -133,6 +135,7 @@ cistrstr(const char *h, const char *n)
 static int
 drawitem(struct item *item, int x, int y, int w)
 {
+	int s;
 	if (item == sel)
 		drw_setscheme(drw, scheme[SchemeSel]);
 	else if (item->out)
@@ -140,7 +143,14 @@ drawitem(struct item *item, int x, int y, int w)
 	else
 		drw_setscheme(drw, scheme[SchemeNorm]);
 
-	return drw_text(drw, x, y, w, bh, lrpad / 2, item->text, 0);
+	drw_text(drw, x, y, w, bh, lrpad / 2, item->text, 0);
+
+	if (item->extra) {
+		s = drw_fontset_getwidth(drw, item->extra);
+		drw_text(drw, x + w - s - lrpad * 2, y, s - lrpad * 2, bh, lrpad, item->extra, 0);
+	}
+
+	return 0;
 }
 
 static void
@@ -572,6 +582,14 @@ readstdin(void)
 		}
 		if (line[len - 1] == '\n')
 			line[len - 1] = '\0';
+		items[i].extra = NULL;
+		if (hint_separator) {
+		    char *sep = strstr(line, hint_separator);
+		    if (sep) {
+			    *sep = '\0';
+			    items[i].extra = sep + strlen(hint_separator);
+		    }
+		}
 		items[i].text = line;
 		items[i].out = 0;
 		line = NULL; /* next call of getline() allocates a new line */
@@ -755,6 +773,8 @@ main(int argc, char *argv[])
 			mon = atoi(argv[++i]);
 		else if (!strcmp(argv[i], "-p"))   /* adds prompt to left of input field */
 			prompt = argv[++i];
+		else if (!strcmp(argv[i], "-h"))   /* separator for item hint */
+			hint_separator = argv[++i];
 		else if (!strcmp(argv[i], "-fn"))  /* font or font set */
 			fonts[0] = argv[++i];
 		else if (!strcmp(argv[i], "-nb"))  /* normal background color */
