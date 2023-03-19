@@ -135,7 +135,7 @@ cistrstr(const char *h, const char *n)
 static int
 drawitem(struct item *item, int x, int y, int w)
 {
-	int s;
+	int s, o;
 	if (item == sel)
 		drw_setscheme(drw, scheme[SchemeSel]);
 	else if (item->out)
@@ -143,11 +143,14 @@ drawitem(struct item *item, int x, int y, int w)
 	else
 		drw_setscheme(drw, scheme[SchemeNorm]);
 
-	drw_text(drw, x, y, w, bh, lrpad / 2, item->text, 0);
+	o = drw_fontset_getwidth(drw, item->text);
+	drw_text(drw, x, y, w, bh, lrpad / 2, item->text, 0, 0);
 
-	if (item->extra) {
+	if (item->extra && o + lrpad * 2 < w) {
 		s = drw_fontset_getwidth(drw, item->extra);
-		drw_text(drw, x + w - s - lrpad * 2, y, s - lrpad * 2, bh, lrpad, item->extra, 0);
+		if (s > w - lrpad * 2 - o)
+		    s = w - lrpad * 2 - o;
+		drw_text(drw, x + w - s - lrpad, y, s + lrpad, bh, lrpad / 2, item->extra, 0, 1);
 	}
 
 	return 0;
@@ -165,12 +168,12 @@ drawmenu(void)
 
 	if (prompt && *prompt) {
 		drw_setscheme(drw, scheme[SchemeSel]);
-		x = drw_text(drw, x, 0, promptw, bh, lrpad / 2, prompt, 0);
+		x = drw_text(drw, x, 0, promptw, bh, lrpad / 2, prompt, 0, 0);
 	}
 	/* draw input field */
 	w = (lines > 0 || !matches) ? mw - x : inputw;
 	drw_setscheme(drw, scheme[SchemeNorm]);
-	drw_text(drw, x, 0, w, bh, lrpad / 2, text, 0);
+	drw_text(drw, x, 0, w, bh, lrpad / 2, text, 0, 0);
 
 	curpos = TEXTW(text) - TEXTW(&text[cursor]);
 	if ((curpos += lrpad / 2 - 1) < w) {
@@ -188,7 +191,7 @@ drawmenu(void)
 		w = TEXTW("<");
 		if (curr->left) {
 			drw_setscheme(drw, scheme[SchemeNorm]);
-			drw_text(drw, x, 0, w, bh, lrpad / 2, "<", 0);
+			drw_text(drw, x, 0, w, bh, lrpad / 2, "<", 0, 0);
 		}
 		x += w;
 		for (item = curr; item != next; item = item->right)
@@ -196,7 +199,7 @@ drawmenu(void)
 		if (next) {
 			w = TEXTW(">");
 			drw_setscheme(drw, scheme[SchemeNorm]);
-			drw_text(drw, mw - w, 0, w, bh, lrpad / 2, ">", 0);
+			drw_text(drw, mw - w, 0, w, bh, lrpad / 2, ">", 0, 0);
 		}
 	}
 	drw_map(drw, win, 0, 0, mw, mh);
@@ -653,9 +656,10 @@ setup(void)
 	Window pw;
 	int a, di, n, area = 0;
 #endif
+
 	/* init appearance */
 	for (j = 0; j < SchemeLast; j++)
-		scheme[j] = drw_scm_create(drw, colors[j], 2);
+		scheme[j] = drw_scm_create(drw, colors[j], 3);
 
 	clip = XInternAtom(dpy, "CLIPBOARD",   False);
 	utf8 = XInternAtom(dpy, "UTF8_STRING", False);
