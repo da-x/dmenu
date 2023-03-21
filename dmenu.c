@@ -32,6 +32,7 @@ struct item {
 	char *text;
 	char *extra;
 	struct item *left, *right;
+	int appended;
 	int out;
 };
 
@@ -77,6 +78,7 @@ appenditem(struct item *item, struct item **list, struct item **last)
 
 	item->left = *last;
 	item->right = NULL;
+	item->appended = 1;
 	*last = item;
 }
 
@@ -248,7 +250,7 @@ match(void)
 	static int tokn = 0;
 
 	char buf[sizeof text], *s;
-	int i, tokc = 0;
+	int i, tokc = 0, j;
 	size_t len, textsize;
 	struct item *item, *lprefix, *lsubstr, *prefixend, *substrend;
 
@@ -261,20 +263,34 @@ match(void)
 
 	matches = lprefix = lsubstr = matchend = prefixend = substrend = NULL;
 	textsize = strlen(text) + 1;
-	for (item = items; item && item->text; item++) {
-		for (i = 0; i < tokc; i++)
-			if (!fstrstr(item->text, tokv[i]))
-				break;
-		if (i != tokc) /* not all tokens match */
-			continue;
-		/* exact matches go first, then prefixes, then substrings */
-		if (!tokc || !fstrncmp(text, item->text, textsize))
-			appenditem(item, &matches, &matchend);
-		else if (!fstrncmp(tokv[0], item->text, len))
-			appenditem(item, &lprefix, &prefixend);
-		else
-			appenditem(item, &lsubstr, &substrend);
+
+	for (item = items; item->text; item++)
+		item->appended = 0;
+
+	for (j = 0; j < 2; j++) {
+		for (item = items; item && item->text; item++) {
+			if (item->appended)
+				continue;
+
+			const char *text = j == 0 ? item->text : item->extra;
+			if (!text)
+				continue;
+
+			for (i = 0; i < tokc; i++)
+				if (!fstrstr(text, tokv[i]))
+					break;
+			if (i != tokc) /* not all tokens match */
+				continue;
+			/* exact matches go first, then prefixes, then substrings */
+			if (!tokc || !fstrncmp(text, text, textsize))
+				appenditem(item, &matches, &matchend);
+			else if (!fstrncmp(tokv[0], text, len))
+				appenditem(item, &lprefix, &prefixend);
+			else
+				appenditem(item, &lsubstr, &substrend);
+		}
 	}
+
 	if (lprefix) {
 		if (matches) {
 			matchend->right = lprefix;
