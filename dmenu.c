@@ -135,7 +135,8 @@ cistrstr(const char *h, const char *n)
 static int
 drawitem(struct item *item, int x, int y, int w)
 {
-	int s, o;
+	int s, o, r;
+
 	if (item == sel)
 		drw_setscheme(drw, scheme[SchemeSel]);
 	else if (item->out)
@@ -144,7 +145,7 @@ drawitem(struct item *item, int x, int y, int w)
 		drw_setscheme(drw, scheme[SchemeNorm]);
 
 	o = drw_fontset_getwidth(drw, item->text);
-	drw_text(drw, x, y, w, bh, lrpad / 2, item->text, 0, 0);
+	r = drw_text(drw, x, y, w, bh, lrpad / 2, item->text, 0, 0);
 
 	if (item->extra && o + lrpad * 2 < w) {
 		s = drw_fontset_getwidth(drw, item->extra);
@@ -153,7 +154,7 @@ drawitem(struct item *item, int x, int y, int w)
 		drw_text(drw, x + w - s - lrpad, y, s + lrpad, bh, lrpad / 2, item->extra, 0, 1);
 	}
 
-	return 0;
+	return r;
 }
 
 static void
