@@ -758,6 +758,10 @@ setup(void)
 	}
 	drw_resize(drw, mw, mh);
 	drawmenu();
+	if (!embed) {
+	    XSync(dpy, False);
+	    grabfocus();
+	}
 }
 
 static void
