@@ -663,6 +663,8 @@ setup(void)
 {
 	int x, y, i, j;
 	unsigned int du;
+	const char *session_type;
+
 	XSetWindowAttributes swa;
 	XIM xim;
 	Window w, dw, *dws;
@@ -758,9 +760,11 @@ setup(void)
 	}
 	drw_resize(drw, mw, mh);
 	drawmenu();
-	if (!embed) {
-	    XSync(dpy, False);
-	    grabfocus();
+
+	session_type = getenv("XDG_SESSION_TYPE");
+	if (!embed && session_type && !strcmp(session_type, "wayland")) {
+		XSync(dpy, False);
+		grabfocus();
 	}
 }
 
